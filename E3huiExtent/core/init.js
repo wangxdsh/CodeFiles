@@ -46,6 +46,9 @@ function renderFloatingWidget() {
   // 提取商品标题（存入全局数据）
     window.GlobalData.productPrice = window.Utils.extractProductPrice();
     console.log('提取商品标题：', window.GlobalData.productPrice);
+    // 提取商户地址（存入全局数据）
+    window.GlobalData.address = window.Utils.extractAddress();
+    console.log('提取商品标题：', window.GlobalData.address);
 
     // 延迟100ms绑定事件（确保DOM完全渲染）
     await window.Utils.delay(100);

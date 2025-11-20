@@ -38,6 +38,10 @@ window.Utils = {
         const priceElement = document.querySelector('span.price-content');
         return priceElement ? priceElement.textContent.trim() : '未采集到价格';
       },
+      extractAddress() {
+        const addressElement = document.querySelector('span.merchant-info-addr');
+        return addressElement ? addressElement.textContent.trim() : '未采集到地址';
+      },
     /**
      * 统一错误提示（分类显示，帮助排查）
      * @param {Error} error - 错误对象

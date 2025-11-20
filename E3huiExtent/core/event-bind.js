@@ -4,6 +4,7 @@ window.GlobalData = {
     productImages: [],    // 商品详情图片URL（待上传）
     productTitle: '',     // 商品标题
     productPrice: '',     // 价格
+    address: '',     // 地址
     mainImageUrl: '',     // 上传后的主图URL
     detailImageUrls: []   // 上传后的详情图URL数组
   };
@@ -185,6 +186,8 @@ window.GlobalData = {
               Title: window.GlobalData.productTitle,
               Pic: mainImageUrl,
               ContentPics: detailImageUrls,
+              address:window.GlobalData.address,
+              productPrice:window.GlobalData.productPrice,
               LinkUrl: window.location.href // 之前新增的页面链接参数
             };
             await window.ApiRequest.submitToProductLibrary(submitData);
