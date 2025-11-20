@@ -1,0 +1,28 @@
+{
+    "manifest_version": 3,
+    "name": "商品详情截图工具（增强版）",
+    "version": "2.0.0",
+    "description": "常驻悬浮窗口，截图目标区域+展示所有商品图片，支持加入产品库",
+    "icons": {
+      "16": "icons/logo.jpg",
+      "48": "icons/logo.jpg",
+      "128": "icons/logo.jpg"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://www.e3hui.com/product/*"],
+        "css": ["/css/style.css"],
+        "js": [
+            "html2canvas.min.js",       
+            "template.js",              
+            "core/utils.js",            
+            "core/image-handle.js",     
+            "core/api-request.js",      
+            "core/event-bind.js",       
+            "core/init.js"              
+        ],
+        "run_at": "document_end"
+      }
+    ],
+    "permissions": []
+  }
