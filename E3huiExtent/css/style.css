@@ -4,6 +4,7 @@
   right: 50px; /* 右距离不变 */
   top: 100px; /* 改为顶部定位（原 bottom: 30px） */
   width: 320px;
+  height: 800px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -23,6 +24,8 @@
   justify-content: space-between;
 }
 
+
+
 /* 关闭按钮（不变） */
 .widget-close {
   background: transparent;
@@ -39,11 +42,17 @@
   max-height: 800px; /* 从 400px 调高到 600px，默认显示更多内容 */
   overflow-y: auto;
 }
-
+.btn-content{
+  padding: 12px 16px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 /* 截图按钮（不变） */
 .screenshot-btn {
-  width: 100%;
-  padding: 10px;
+  padding: 10px ;
+  margin-left: 0px;
   background: #4299e1;
   color: white;
   border: none;
@@ -73,6 +82,9 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 16px;
+  max-height: 300px;
+  overflow-y: auto; /* 当内容超过最大高度时显示纵向滚动条 */
+  overflow-x: hidden; /* 隐藏横向滚动条（如需） */
 }
 
 /* 图片项（含复选框）（不变） */
