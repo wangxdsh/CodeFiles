@@ -70,21 +70,25 @@ window.ApiRequest = {
         const controller = new AbortController();
         const timeoutMs = 15000; // 上传超时延长到15秒（应对大图片）
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
+
+        // 核心修改1：拼接上传接口地址（确保 apiHost 正确拼接）
+        const uploadUrl = `${window.GlobalData.apiHost}/file/uploadfile`; // 无多余斜杠
+        console.log('上传接口地址：', uploadUrl); // 日志输出，确认地址正确
+
         console.log('发起上传请求：', {
-          url: 'http://localhost:8010/file/uploadfile',
+          url: uploadUrl,
           fileModule,
           fileName,
           blobSize: blob.size,
           blobType: blob.type
         });
   
-        const response = await fetch('http://localhost:8010/file/uploadfile', {
+        const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData,
           credentials: 'include', // 携带登录态（适配[AuthorizeFilter]）
           signal: controller.signal, // 绑定超时控制器
-          headers: { 'Accept': 'application/json' } // 明确接收JSON
+          headers: { 'Accept': 'application/json' ,'Referer': window.location.href} // 明确接收JSON
         });
   
         clearTimeout(timeoutId); // 清除超时定时器
@@ -142,12 +146,15 @@ window.ApiRequest = {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 延长到15秒超时
   
+        // 核心修改1：拼接上传接口地址（确保 apiHost 正确拼接）
+        const submitUrl = `${window.GlobalData.apiHost}/AppManage/BaseProduct/SaveFormWeb`; // 无多余斜杠
         console.log('提交产品库数据：', submitData);
-        const response = await fetch('http://localhost:8010/AppManage/BaseProduct/SaveFormWeb', {
+
+        const response = await fetch(submitUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json','Referer': window.location.href
           },
           body: JSON.stringify(submitData),
           credentials: 'include', // 携带登录态

@@ -1,4 +1,3 @@
-// 显式将模板挂载到window全局对象，确保其他脚本可访问
 window.widgetTemplate = `
   <div class="screenshot-widget">
     <!-- 窗口标题栏 -->
@@ -12,7 +11,12 @@ window.widgetTemplate = `
       <button class="screenshot-btn">点击截取商品左侧信息区</button>
       <!-- 加入产品库按钮（默认隐藏） -->
       <button class="add-to-library-btn">加入产品库</button>
-      <!-- 加载中提示 -->
+      <!-- 新增：提交产品库 Loading（悬浮窗口内，默认隐藏） -->
+      <div class="submit-loading" style="display: none;">
+        <span class="loading-spinner"></span>
+        <span class="loading-text">提交中...</span>
+      </div>
+      <!-- 截图加载中提示 -->
       <div class="widget-loading">截图中...</div>
       <!-- 截图预览（默认隐藏） -->
       <div class="screenshot-preview" style="display: none;">
@@ -28,6 +32,6 @@ window.widgetTemplate = `
       </div>
     </div>
   </div>
-  <!-- 接口请求loading（全局居中） -->
+  <!-- 全局居中 Loading（保留，可作为备用，或删除） -->
   <div class="library-loading">提交中...</div>
 `;

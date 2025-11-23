@@ -170,3 +170,60 @@
   z-index: 99999;
   display: none;
 }
+
+/* 悬浮窗口内的提交 Loading 样式 */
+.submit-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1890ff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
+}
+
+/* 旋转加载图标 */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #1890ff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spinner-rotate 1s linear infinite;
+}
+
+/* 旋转动画 */
+@keyframes spinner-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 加载文字样式 */
+.loading-text {
+  white-space: nowrap;
+}
+
+/* 调整按钮和 Loading 的布局（确保同级对齐） */
+.widget-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* 按钮、Loading、预览区之间的间距 */
+  padding: 16px;
+}
+
+.screenshot-btn, .add-to-library-btn, .submit-loading {
+  width: fit-content;
+  margin: 0 auto; /* 居中显示 */
+}
+
+/* 隐藏全局 Loading（若保留则注释此行） */
+.library-loading {
+  display: none !important;
+}

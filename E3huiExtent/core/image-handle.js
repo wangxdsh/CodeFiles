@@ -155,24 +155,25 @@ window.ImageHandle = {
       const imageList = productImagesContainer?.querySelector('.image-list');
       const imageCount = productImagesContainer?.querySelector('.image-count');
       
-      // 校验元素和数据是否有效
       if (!productImagesContainer || !imageList || !imageCount || images.length === 0) return;
   
-      // 更新图片数量并显示列表
       imageCount.textContent = images.length;
       productImagesContainer.style.display = 'block';
       imageList.innerHTML = ''; // 清空原有内容
   
-      // 循环渲染图片项（含复选框）
+      // 循环渲染图片项（核心修改：给复选框添加 data-img-url 属性）
       images.forEach((imgUrl, index) => {
         const imageItem = document.createElement('div');
         imageItem.className = 'image-item';
+        // 给图片项也添加 data-url（双重保险）
+        imageItem.dataset.url = imgUrl;
         imageItem.innerHTML = `
-          <div class="image-checkbox"></div>
+          <!-- 核心修改：给复选框添加 data-img-url 存储图片URL -->
+          <div class="image-checkbox" data-img-url="${imgUrl}"></div>
           <img class="image-thumbnail" src="${imgUrl}" alt="商品图片${index+1}">
         `;
   
-        // 绑定复选框事件
+        // 绑定复选框事件（原有逻辑不变，确保能正常勾选）
         const checkbox = imageItem.querySelector('.image-checkbox');
         if (checkbox) {
           // 点击复选框（阻止冒泡）
@@ -187,7 +188,6 @@ window.ImageHandle = {
           });
         }
   
-        // 添加到图片列表
         imageList.appendChild(imageItem);
       });
     }

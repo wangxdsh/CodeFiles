@@ -1,5 +1,6 @@
 // 全局核心数据（替代原export的globalData）
 window.GlobalData = {
+    apiHost: 'https://www.ehkang.com/e3hui', // 截图Base64
     screenshotBase64: '', // 截图Base64
     productImages: [],    // 商品详情图片URL（待上传）
     productTitle: '',     // 商品标题
@@ -80,136 +81,128 @@ window.GlobalData = {
       }
   
       // 3. 绑定「加入产品库」按钮事件
-      if (addToLibraryBtn) {
-        addToLibraryBtn.addEventListener('click', async () => {
-          // 验证数据完整性（原有逻辑）
-          if (!window.GlobalData.screenshotBase64) {
-            alert('请先完成截图再加入产品库！');
-            return;
-          }
-          const validDetailImages = window.GlobalData.productImages.filter(url => url.startsWith('https://'));
-          if (validDetailImages.length === 0) {
-            alert('未获取到有效商品详情图片（需HTTPS协议），无法提交！');
-            return;
-          }
-      
-          // 新增：筛选勾选状态的详情图（核心修改）
-          const productImagesContainer = document.querySelector('.product-images');
-          const imageItems = productImagesContainer?.querySelectorAll('.image-list .image-item');
-          if (!imageItems || imageItems.length === 0) {
-            alert('未找到详情图片列表，无法识别勾选状态！');
-            return;
-          }
-      
-          // 遍历所有图片项，收集勾选的图片URL
-          const checkedImageUrls = [];
-          imageItems.forEach((item, index) => {
-            const checkbox = item.querySelector('.image-checkbox');
-            // 检查复选框是否有「checked」类（表示已勾选）
-            if (checkbox && checkbox.classList.contains('checked')) {
-              // 从全局数据中取对应索引的图片URL（确保与勾选项一致）
-              const checkedUrl = validDetailImages[index];
-              if (checkedUrl) {
-                checkedImageUrls.push(checkedUrl);
-                console.log(`勾选详情图${index+1}：`, checkedUrl);
-              }
+        if (addToLibraryBtn) {
+            addToLibraryBtn.addEventListener('click', async () => {
+            // 获取悬浮窗口内的 Loading 元素（原有逻辑）
+            const submitLoading = document.querySelector('.submit-loading');
+            if (!submitLoading) {
+                alert('未找到提交 Loading 元素，无法继续！');
+                return;
             }
-          });
-      
-          // 校验：至少勾选1张详情图
-          if (checkedImageUrls.length === 0) {
-            alert('请至少勾选1张详情图后再提交！');
-            return;
-          }
-      
-          // 显示加载中，禁用按钮（原有逻辑）
-          if (requestLoading && requestLoading.style) requestLoading.style.display = 'block';
-          addToLibraryBtn.disabled = true;
-      
-          try {
-            // 第一步：上传主图（不变）
-            console.log('开始上传主图...');
-            const mainImageUrl = await window.ApiRequest.uploadImageToServer(
-              window.GlobalData.screenshotBase64,
-              `main-image-${Date.now()}.png`, // 时间戳确保文件名唯一
-              1
-            );
-            window.GlobalData.mainImageUrl = mainImageUrl;
-            console.log('主图上传成功：', mainImageUrl);
-      
-            // 第二步：批量上传「勾选的详情图」（修改：仅上传 checkedImageUrls）
-            console.log(`开始上传勾选的详情图（共${checkedImageUrls.length}张）...`);
-            const detailImageUrls = [];
-            const maxRetries = 1; // 每张图最多重试1次
-            const uploadDelay = 500; // 每张图上传间隔500ms（避免限流）
-      
-            // 遍历「勾选的图片URL数组」（原逻辑是遍历 validDetailImages）
-            for (const [index, imgUrl] of checkedImageUrls.entries()) {
-              let detailUrl = null;
-              let retryCount = 0;
-      
-              // 单张图片上传+重试逻辑（不变）
-              while (retryCount <= maxRetries && !detailUrl) {
-                try {
-                  console.log(`上传勾选详情图${index+1}/${checkedImageUrls.length}（重试${retryCount}次）：`, imgUrl);
-                  await window.Utils.delay(uploadDelay); // 间隔延迟
-                  detailUrl = await window.ApiRequest.uploadImageToServer(
-                    imgUrl,
-                    `detail-image-${Date.now()}-${index+1}.png`, // 唯一文件名
-                    2
-                  );
-                } catch (error) {
-                  retryCount++;
-                  console.warn(`勾选详情图${index+1}上传失败（重试${retryCount}/${maxRetries}）：`, error.message);
-                  if (retryCount > maxRetries) {
-                    console.error(`勾选详情图${index+1}最终上传失败：`, imgUrl);
-                    // 不终止批量上传，仅提示跳过
-                    alert(`警告：勾选详情图${index+1}上传失败（${error.message}），已跳过`);
-                  }
+        
+            // 验证数据完整性（原有逻辑）
+            if (!window.GlobalData.screenshotBase64) {
+                alert('请先完成截图再加入产品库！');
+                return;
+            }
+        
+            // 核心修复：筛选勾选的详情图（直接从复选框取URL，不依赖索引）
+            const checkedCheckboxes = document.querySelectorAll('.product-images .image-checkbox.checked');
+            if (!checkedCheckboxes || checkedCheckboxes.length === 0) {
+                alert('请至少勾选1张详情图后再提交！');
+                return;
+            }
+        
+            // 收集勾选的图片URL（从复选框的 data-img-url 属性获取）
+            const checkedImageUrls = [];
+            checkedCheckboxes.forEach((checkbox, index) => {
+                const imgUrl = checkbox.dataset.imgUrl?.trim();
+                if (imgUrl && imgUrl.startsWith('https://')) {
+                checkedImageUrls.push(imgUrl);
+                console.log(`勾选详情图${index+1}：`, imgUrl);
                 }
-              }
-      
-              // 成功上传的图片URL加入数组（不变）
-              if (detailUrl) {
-                detailImageUrls.push(detailUrl);
-                console.log(`勾选详情图${index+1}上传成功：`, detailUrl);
-              }
+            });
+        
+            // 二次校验：确保收集到有效URL（避免空值或非HTTPS URL）
+            if (checkedImageUrls.length === 0) {
+                alert('勾选的图片URL无效，请重新勾选！');
+                return;
             }
-      
-            // 校验：至少1张勾选详情图上传成功
-            if (detailImageUrls.length === 0) {
-              throw new Error('所有勾选的详情图上传失败，请检查图片URL有效性或网络连接');
+        
+            // 显示 Loading，隐藏按钮（原有逻辑）
+            addToLibraryBtn.style.display = 'none';
+            submitLoading.style.display = 'inline-flex';
+        
+            try {
+                // 第一步：上传主图（不变）
+                console.log('开始上传主图...');
+                const mainImageUrl = await window.ApiRequest.uploadImageToServer(
+                window.GlobalData.screenshotBase64,
+                `main-image-${Date.now()}.png`,
+                1
+                );
+                window.GlobalData.mainImageUrl = mainImageUrl;
+                console.log('主图上传成功：', mainImageUrl);
+        
+                // 第二步：批量上传「勾选的详情图」（使用 checkedImageUrls，不变）
+                console.log(`开始上传勾选的详情图（共${checkedImageUrls.length}张）...`);
+                const detailImageUrls = [];
+                const maxRetries = 1;
+                const uploadDelay = 500;
+        
+                for (const [index, imgUrl] of checkedImageUrls.entries()) {
+                let detailUrl = null;
+                let retryCount = 0;
+        
+                while (retryCount <= maxRetries && !detailUrl) {
+                    try {
+                    console.log(`上传勾选详情图${index+1}/${checkedImageUrls.length}（重试${retryCount}次）：`, imgUrl);
+                    await window.Utils.delay(uploadDelay);
+                    detailUrl = await window.ApiRequest.uploadImageToServer(
+                        imgUrl,
+                        `detail-image-${Date.now()}-${index+1}.png`,
+                        2
+                    );
+                    } catch (error) {
+                    retryCount++;
+                    console.warn(`勾选详情图${index+1}上传失败（重试${retryCount}/${maxRetries}）：`, error.message);
+                    if (retryCount > maxRetries) {
+                        console.error(`勾选详情图${index+1}最终上传失败：`, imgUrl);
+                        alert(`警告：勾选详情图${index+1}上传失败（${error.message}），已跳过`);
+                    }
+                    }
+                }
+        
+                if (detailUrl) {
+                    detailImageUrls.push(detailUrl);
+                    console.log(`勾选详情图${index+1}上传成功：`, detailUrl);
+                }
+                }
+        
+                if (detailImageUrls.length === 0) {
+                throw new Error('所有勾选的详情图上传失败，请检查图片URL有效性或网络连接');
+                }
+        
+                // 第三步：提交到产品库（不变）
+                const submitData = {
+                Title: window.GlobalData.productTitle,
+                Pic: mainImageUrl,
+                address:window.GlobalData.address,
+                productPrice:window.GlobalData.productPrice,
+                ContentPics: detailImageUrls,
+                LinkUrl: window.location.href
+                };
+                await window.ApiRequest.submitToProductLibrary(submitData);
+        
+                // 成功提示（不变）
+                alert(`保存成功！已加入产品库\n主图：1张\n勾选详情图：${checkedImageUrls.length}张\n成功上传：${detailImageUrls.length}张\n页面链接：${submitData.LinkUrl}`);
+            } catch (error) {
+                // 错误处理（不变）
+                console.error('加入产品库失败：', error);
+                let errorMsg = window.Utils.formatErrorMsg(error);
+                if (errorMsg.includes('401') || errorMsg.includes('403')) {
+                errorMsg += '\n\n请检查：1. 是否已登录 http://localhost:8010 2. 登录态是否过期';
+                } else if (errorMsg.includes('跨域下载失败')) {
+                errorMsg += '\n\n原因：图片服务器限制跨域下载，需后端提供代理接口';
+                }
+                alert(`保存失败：${errorMsg}`);
+            } finally {
+                // 隐藏 Loading，恢复按钮（不变）
+                submitLoading.style.display = 'none';
+                addToLibraryBtn.style.display = 'block';
+                addToLibraryBtn.disabled = false;
             }
-      
-            // 第三步：提交到产品库（不变，参数名已对齐）
-            const submitData = {
-              Title: window.GlobalData.productTitle,
-              Pic: mainImageUrl,
-              ContentPics: detailImageUrls,
-              address:window.GlobalData.address,
-              productPrice:window.GlobalData.productPrice,
-              LinkUrl: window.location.href // 之前新增的页面链接参数
-            };
-            await window.ApiRequest.submitToProductLibrary(submitData);
-      
-            // 提交成功提示（修改：显示勾选上传成功的数量）
-            alert(`保存成功！已加入产品库\n主图：1张\n勾选详情图：${checkedImageUrls.length}张\n成功上传：${detailImageUrls.length}张\n页面链接：${submitData.LinkUrl}`);
-          } catch (error) {
-            console.error('加入产品库失败：', error);
-            // 针对性错误提示（原有逻辑）
-            let errorMsg = window.Utils.formatErrorMsg(error);
-            if (errorMsg.includes('401') || errorMsg.includes('403')) {
-              errorMsg += '\n\n请检查：1. 是否已登录 http://localhost:8010 2. 登录态是否过期';
-            } else if (errorMsg.includes('跨域下载失败')) {
-              errorMsg += '\n\n原因：图片服务器限制跨域下载，需后端提供代理接口';
-            }
-            alert(`保存失败：${errorMsg}`);
-          } finally {
-            // 隐藏加载中，恢复按钮状态（原有逻辑）
-            if (requestLoading && requestLoading.style) requestLoading.style.display = 'none';
-            addToLibraryBtn.disabled = false;
-          }
-        });
-      }
+            });
+        }
     }
   };
