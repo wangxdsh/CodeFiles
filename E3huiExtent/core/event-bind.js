@@ -6,6 +6,8 @@ window.GlobalData = {
     productTitle: '',     // 商品标题
     productPrice: '',     // 价格
     address: '',     // 地址
+    fabric: '',           // 面料数据
+    productColors: [],    // 商品颜色和对应图片 [{color: string, imageUrl: string}]
     mainImageUrl: '',     // 上传后的主图URL
     detailImageUrls: []   // 上传后的详情图URL数组
   };
@@ -33,48 +35,63 @@ window.GlobalData = {
         });
       }
   
-      // 2. 绑定截图按钮事件
+      // 2. 绑定截图按钮事件（获取素材）
       if (screenshotBtn) {
         screenshotBtn.addEventListener('click', async () => {
-          // 显示加载中，禁用按钮
-          if (widgetLoading && widgetLoading.style) widgetLoading.style.display = 'block';
+          const productImagesContainer = document.querySelector('.product-images');
+          const imagesLoading = productImagesContainer?.querySelector('.images-loading');
+          const imageList = productImagesContainer?.querySelector('.image-list');
+
+          // 禁用按钮
           screenshotBtn.disabled = true;
           if (addToLibraryBtn && addToLibraryBtn.style) addToLibraryBtn.style.display = 'none';
-  
-          // 重置全局数据
-          Object.assign(window.GlobalData, {
-            screenshotBase64: '',
-            productImages: [],
-            mainImageUrl: '',
-            detailImageUrls: []
-          });
-  
+
+          // 显示商品详情图片模块和loading，隐藏图片列表
+          if (productImagesContainer && productImagesContainer.style) {
+            productImagesContainer.style.display = 'block';
+          }
+          if (imagesLoading && imagesLoading.style) {
+            imagesLoading.style.display = 'flex';
+          }
+          if (imageList && imageList.style) {
+            imageList.style.display = 'none'; // 加载完成前隐藏
+          }
+
+          // 重置商品图片数据
+          window.GlobalData.productImages = [];
+
           try {
-            // 截图目标DIV - 调用全局图片处理函数
-            const screenshotBase64 = await window.ImageHandle.captureTargetDiv();
-            window.GlobalData.screenshotBase64 = screenshotBase64;
-  
             // 加载所有懒加载图片 - 调用全局图片处理函数
             const productImages = await window.ImageHandle.loadAllLazyImages();
             window.GlobalData.productImages = productImages;
-  
+
+            // 隐藏loading，显示图片列表（移除display:none，恢复CSS默认的grid布局）
+            if (imagesLoading && imagesLoading.style) {
+              imagesLoading.style.display = 'none';
+            }
+            if (imageList && imageList.style) {
+              imageList.style.display = ''; // 移除内联样式，恢复CSS默认的grid
+            }
+
             // 更新UI - 调用全局图片处理函数
-            window.ImageHandle.updatePreviewUI(screenshotBase64);
             window.ImageHandle.updateProductImagesUI(productImages);
-  
+
             // 显示「加入产品库」按钮（至少有1张详情图才显示）
             if (addToLibraryBtn && addToLibraryBtn.style && productImages.length > 0) {
               addToLibraryBtn.style.display = 'block';
             } else if (addToLibraryBtn && addToLibraryBtn.style) {
               addToLibraryBtn.style.display = 'none';
-              alert('未检测到有效商品详情图片，无法加入产品库');
+              console.warn('未检测到有效商品详情图片');
             }
           } catch (error) {
-            console.error('截图/加载图片失败：', error);
+            console.error('加载图片失败：', error);
+            // 隐藏loading
+            if (imagesLoading && imagesLoading.style) {
+              imagesLoading.style.display = 'none';
+            }
             alert(`操作失败：${window.Utils.formatErrorMsg(error)}`); // 调用全局工具函数
           } finally {
-            // 隐藏加载中，恢复按钮状态
-            if (widgetLoading && widgetLoading.style) widgetLoading.style.display = 'none';
+            // 恢复按钮状态
             screenshotBtn.disabled = false;
           }
         });
@@ -173,19 +190,66 @@ window.GlobalData = {
                 throw new Error('所有勾选的详情图上传失败，请检查图片URL有效性或网络连接');
                 }
         
-                // 第三步：提交到产品库（不变）
+                // 第三步：上传颜色图片（如果有颜色数据）
+                const colorImages = [];
+                if (window.GlobalData.productColors && window.GlobalData.productColors.length > 0) {
+                    console.log(`开始上传颜色图片（共${window.GlobalData.productColors.length}张）...`);
+                    const maxRetries = 1;
+                    const uploadDelay = 500;
+        
+                    for (const [index, colorItem] of window.GlobalData.productColors.entries()) {
+                        let colorImageUrl = null;
+                        let retryCount = 0;
+        
+                        while (retryCount <= maxRetries && !colorImageUrl) {
+                            try {
+                                console.log(`上传颜色图片${index+1}/${window.GlobalData.productColors.length}（颜色：${colorItem.color}，重试${retryCount}次）：`, colorItem.imageUrl);
+                                await window.Utils.delay(uploadDelay);
+                                colorImageUrl = await window.ApiRequest.uploadImageToServer(
+                                    colorItem.imageUrl,
+                                    `color-image-${Date.now()}-${index+1}.png`,
+                                    2 // 使用详情图模块标识
+                                );
+                            } catch (error) {
+                                retryCount++;
+                                console.warn(`颜色图片${index+1}上传失败（重试${retryCount}/${maxRetries}）：`, error.message);
+                                if (retryCount > maxRetries) {
+                                    console.error(`颜色图片${index+1}最终上传失败：`, colorItem.imageUrl);
+                                    alert(`警告：颜色图片"${colorItem.color}"上传失败（${error.message}），已跳过`);
+                                }
+                            }
+                        }
+        
+                        if (colorImageUrl) {
+                            colorImages.push({
+                                color: colorItem.color,
+                                imageUrl: colorImageUrl
+                            });
+                            console.log(`颜色图片${index+1}上传成功：`, colorImageUrl);
+                        }
+                    }
+                }
+        
+                // 第四步：提交到产品库（包含颜色数据和面料数据）
                 const submitData = {
                 Title: window.GlobalData.productTitle,
                 Pic: mainImageUrl,
                 address:window.GlobalData.address,
                 productPrice:window.GlobalData.productPrice,
                 ContentPics: detailImageUrls,
-                LinkUrl: window.location.href
+                LinkUrl: window.location.href,
+                Colors: colorImages, // 颜色和对应图片数组
+                Fabric: window.GlobalData.fabric || '' // 面料数据
                 };
                 await window.ApiRequest.submitToProductLibrary(submitData);
         
-                // 成功提示（不变）
-                alert(`保存成功！已加入产品库\n主图：1张\n勾选详情图：${checkedImageUrls.length}张\n成功上传：${detailImageUrls.length}张\n页面链接：${submitData.LinkUrl}`);
+                // 成功提示（包含颜色信息）
+                let successMsg = `保存成功！已加入产品库\n主图：1张\n勾选详情图：${checkedImageUrls.length}张\n成功上传：${detailImageUrls.length}张`;
+                if (colorImages.length > 0) {
+                    successMsg += `\n颜色图片：${colorImages.length}张`;
+                }
+                successMsg += `\n页面链接：${submitData.LinkUrl}`;
+                alert(successMsg);
             } catch (error) {
                 // 错误处理（不变）
                 console.error('加入产品库失败：', error);

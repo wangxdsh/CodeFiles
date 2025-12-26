@@ -43,17 +43,65 @@ function renderFloatingWidget() {
     // 提取商品标题（存入全局数据）
     window.GlobalData.productTitle = window.Utils.extractProductTitle();
     console.log('提取商品标题：', window.GlobalData.productTitle);
-  // 提取商品标题（存入全局数据）
+    
+    // 提取商品价格（存入全局数据）
     window.GlobalData.productPrice = window.Utils.extractProductPrice();
-    console.log('提取商品标题：', window.GlobalData.productPrice);
+    console.log('提取商品价格：', window.GlobalData.productPrice);
+    
     // 提取商户地址（存入全局数据）
     window.GlobalData.address = window.Utils.extractAddress();
-    console.log('提取商品标题：', window.GlobalData.address);
+    console.log('提取商户地址：', window.GlobalData.address);
+    
+    // 提取面料数据（存入全局数据）
+    window.GlobalData.fabric = window.Utils.extractFabric();
+    console.log('提取面料数据：', window.GlobalData.fabric);
+    
+    // 更新商品信息UI（延迟确保DOM已渲染）
+    await window.Utils.delay(100);
+    window.ImageHandle.updateProductInfoUI();
+    console.log('商品信息UI更新完成');
+    
+    // 提取商品颜色和对应图片（存入全局数据）
+    window.GlobalData.productColors = window.Utils.extractProductColors();
+    console.log('提取商品颜色：', window.GlobalData.productColors);
+    
+    // 更新颜色列表UI（延迟确保DOM已渲染）
+    await window.Utils.delay(100);
+    if (window.GlobalData.productColors && window.GlobalData.productColors.length > 0) {
+      window.ImageHandle.updateProductColorsUI(window.GlobalData.productColors);
+      console.log('颜色列表UI更新完成');
+    }
 
     // 延迟100ms绑定事件（确保DOM完全渲染）
     await window.Utils.delay(100);
     window.EventBind.bindAllEvents();
     console.log('插件初始化完成，事件绑定成功');
+
+    // 延迟500ms后自动执行截图（确保页面完全加载）
+    await window.Utils.delay(500);
+    try {
+      console.log('开始自动截图...');
+      const autoLoading = document.querySelector('.auto-screenshot-loading');
+      if (autoLoading && autoLoading.style) {
+        autoLoading.style.display = 'flex';
+      }
+      const targetDiv = document.querySelector('.product-info-left');
+      if (targetDiv) {
+        const screenshotBase64 = await window.ImageHandle.captureTargetDiv();
+        window.GlobalData.screenshotBase64 = screenshotBase64;
+        window.ImageHandle.updatePreviewUI(screenshotBase64);
+        console.log('自动截图完成并已显示');
+      } else {
+        console.warn('未找到商品信息区域，无法自动截图');
+      }
+    } catch (error) {
+      console.warn('自动截图失败：', error.message);
+    } finally {
+      const autoLoading = document.querySelector('.auto-screenshot-loading');
+      if (autoLoading && autoLoading.style) {
+        autoLoading.style.display = 'none';
+      }
+    }
   }
   
   /**

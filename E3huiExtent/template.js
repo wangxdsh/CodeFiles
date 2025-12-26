@@ -7,6 +7,42 @@ window.widgetTemplate = `
     </div>
     <!-- 窗口内容区 -->
     <div class="widget-content">
+      <!-- 商品信息展示区 -->
+      <div class="product-info">
+        <div class="info-item">
+          <span class="info-label">商品标题：</span>
+          <span class="info-value product-title">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">价格：</span>
+          <span class="info-value product-price">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">地址：</span>
+          <span class="info-value product-address">-</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">面料：</span>
+          <span class="info-value product-fabric">-</span>
+        </div>
+      </div>
+      <!-- 商品颜色列表（默认隐藏） -->
+      <div class="product-colors" style="display: none;">
+        <h4 class="list-title">商品颜色（共<span class="color-count">0</span>种）</h4>
+        <div class="color-list"></div>
+      </div>
+      <!-- 自动截图 Loading（自动截图时显示） -->
+      <div class="auto-screenshot-loading" style="display: none;">
+        <span class="loading-spinner"></span>
+        <span class="loading-text">自动截图中...</span>
+      </div>
+      <!-- 截图预览（默认隐藏） -->
+      <div class="screenshot-preview" style="display: none;">
+        <h4 class="list-title">截图预览</h4>
+        <div class="image-item">
+          <img class="image-thumbnail" src="" alt="截图预览">
+        </div>
+      </div>
       <!-- 截图按钮 -->
       <div class ="btn-content">
         <button class="screenshot-btn">获取素材</button>
@@ -17,19 +53,15 @@ window.widgetTemplate = `
           <span class="loading-spinner"></span>
           <span class="loading-text">提交中...</span>
         </div>
-        <!-- 截图加载中提示 -->
-        <div class="widget-loading">截图中...</div>
-      </div>  
-      <!-- 截图预览（默认隐藏） -->
-      <div class="screenshot-preview" style="display: none;">
-        <h4 class="list-title">截图预览</h4>
-        <div class="image-item">
-          <img class="image-thumbnail" src="" alt="截图预览">
-        </div>
       </div>
       <!-- 商品详情图片列表（默认隐藏） -->
       <div class="product-images" style="display: none;">
         <h4 class="list-title">商品详情图片（共<span class="image-count">0</span>张）</h4>
+        <!-- 图片加载中提示 -->
+        <div class="images-loading">
+          <span class="loading-spinner"></span>
+          <span class="loading-text">加载图片中...</span>
+        </div>
         <div class="image-list"></div>
       </div>
     </div>

@@ -43,6 +43,50 @@ window.Utils = {
         return addressElement ? addressElement.textContent.trim() : '未采集到地址';
       },
     /**
+     * 提取商品面料数据（从 .content-box-fabric .cont 元素）
+     * @returns {string} 面料数据（默认"未采集到面料"）
+     */
+    extractFabric() {
+      const fabricElement = document.querySelector('.content-box-fabric .cont');
+      return fabricElement ? fabricElement.textContent.trim() : '未采集到面料';
+    },
+    /**
+     * 提取商品颜色和对应的图片（从 li.sku-warp-li 元素）
+     * - 允许图片链接以 http 或 https 开头
+     * @returns {Array<{color: string, imageUrl: string}>} 颜色和图片数组
+     */
+    extractProductColors() {
+      const colorItems = document.querySelectorAll('li.sku-warp-li');
+      const colors = [];
+      
+      colorItems.forEach((item) => {
+        // 获取颜色名称（优先使用 data-color 属性，否则使用 span 文本）
+        const colorName = item.dataset.color?.trim() || 
+                         item.querySelector('span')?.textContent?.trim() || 
+                         '未知颜色';
+        
+        // 获取图片 URL（优先使用 src，否则使用 data-src）
+        const imgElement = item.querySelector('img');
+        if (!imgElement) return;
+
+        const rawUrl = imgElement.src?.trim() || imgElement.dataset.src?.trim() || '';
+        if (!rawUrl) return;
+
+        // 仅接受 http / https 开头的链接，其余丢弃
+        if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+          console.warn('过滤无效颜色图片URL（非http/https）：', rawUrl);
+          return;
+        }
+
+        colors.push({
+          color: colorName,
+          imageUrl: rawUrl
+        });
+      });
+      
+      return colors;
+    },
+    /**
      * 统一错误提示（分类显示，帮助排查）
      * @param {Error} error - 错误对象
      * @returns {string} 格式化后的错误信息

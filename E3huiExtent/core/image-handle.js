@@ -114,6 +114,36 @@ window.ImageHandle = {
     },
   
     /**
+     * 更新商品信息UI（标题、价格、地址、面料）
+     */
+    updateProductInfoUI() {
+      const titleElement = document.querySelector('.product-title');
+      const priceElement = document.querySelector('.product-price');
+      const addressElement = document.querySelector('.product-address');
+      const fabricElement = document.querySelector('.product-fabric');
+      
+      // 更新商品标题
+      if (titleElement && window.GlobalData.productTitle) {
+        titleElement.textContent = window.GlobalData.productTitle || '-';
+      }
+      
+      // 更新商品价格
+      if (priceElement && window.GlobalData.productPrice) {
+        priceElement.textContent = window.GlobalData.productPrice || '-';
+      }
+      
+      // 更新商户地址
+      if (addressElement && window.GlobalData.address) {
+        addressElement.textContent = window.GlobalData.address || '-';
+      }
+      
+      // 更新面料信息
+      if (fabricElement && window.GlobalData.fabric) {
+        fabricElement.textContent = window.GlobalData.fabric || '-';
+      }
+    },
+
+    /**
      * 更新截图预览UI
      * @param {string} screenshotBase64 - 截图Base64数据
      */
@@ -147,6 +177,42 @@ window.ImageHandle = {
     },
   
     /**
+     * 更新商品颜色列表UI
+     * @param {Array} colors - 商品颜色数组 [{color: string, imageUrl: string}]
+     */
+    updateProductColorsUI(colors) {
+      const productColorsContainer = document.querySelector('.product-colors');
+      const colorList = productColorsContainer?.querySelector('.color-list');
+      const colorCount = productColorsContainer?.querySelector('.color-count');
+      
+      if (!productColorsContainer || !colorList || !colorCount) return;
+
+      // 如果没有颜色数据，隐藏容器
+      if (!colors || colors.length === 0) {
+        productColorsContainer.style.display = 'none';
+        return;
+      }
+
+      colorCount.textContent = colors.length;
+      productColorsContainer.style.display = 'block';
+      colorList.innerHTML = ''; // 清空原有内容
+
+      // 循环渲染颜色项
+      colors.forEach((colorItem, index) => {
+        const colorElement = document.createElement('div');
+        colorElement.className = 'color-item';
+        colorElement.innerHTML = `
+          <div class="color-thumbnail-wrapper">
+            <img class="color-thumbnail" src="${colorItem.imageUrl}" alt="${colorItem.color}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'12\'%3E加载失败%3C/text%3E%3C/svg%3E'">
+          </div>
+          <span class="color-name">${colorItem.color}</span>
+        `;
+
+        colorList.appendChild(colorElement);
+      });
+    },
+
+    /**
      * 更新商品图片列表UI
      * @param {Array} images - 商品详情图片URL数组
      */
@@ -156,11 +222,11 @@ window.ImageHandle = {
       const imageCount = productImagesContainer?.querySelector('.image-count');
       
       if (!productImagesContainer || !imageList || !imageCount || images.length === 0) return;
-  
+
       imageCount.textContent = images.length;
       productImagesContainer.style.display = 'block';
       imageList.innerHTML = ''; // 清空原有内容
-  
+
       // 循环渲染图片项（核心修改：给复选框添加 data-img-url 属性）
       images.forEach((imgUrl, index) => {
         const imageItem = document.createElement('div');
@@ -172,7 +238,7 @@ window.ImageHandle = {
           <div class="image-checkbox" data-img-url="${imgUrl}"></div>
           <img class="image-thumbnail" src="${imgUrl}" alt="商品图片${index+1}">
         `;
-  
+
         // 绑定复选框事件（原有逻辑不变，确保能正常勾选）
         const checkbox = imageItem.querySelector('.image-checkbox');
         if (checkbox) {
@@ -181,13 +247,13 @@ window.ImageHandle = {
             e.stopPropagation();
             checkbox.classList.toggle('checked');
           });
-  
+
           // 点击图片触发复选框切换
           imageItem.addEventListener('click', () => {
             checkbox.classList.toggle('checked');
           });
         }
-  
+
         imageList.appendChild(imageItem);
       });
     }

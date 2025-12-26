@@ -10,22 +10,30 @@ window.ApiRequest = {
     async uploadImageToServer(imageSource, fileName, fileModule) {
       let blob;
   
-      // 1. 处理图片来源（增加URL有效性校验+HTTPS强制校验）
+      // 1. 处理图片来源（增加URL有效性校验+允许HTTP/HTTPS）
       if (imageSource.startsWith('data:image/')) {
         blob = window.Utils.dataURLToBlob(imageSource);
       } else {
-        // 校验URL是否为HTTPS（二次保险）
-        if (!imageSource.startsWith('https://')) {
-          throw new Error(`图片URL无效：${imageSource}（必须是HTTPS协议）`);
+        // 校验URL是否为HTTP或HTTPS（允许两种协议）
+        if (!imageSource.startsWith('https://') && !imageSource.startsWith('http://')) {
+          throw new Error(`图片URL无效：${imageSource}（必须是HTTP或HTTPS协议）`);
+        }
+  
+        // 对于HTTP图片，先尝试转换为HTTPS（避免混合内容问题）
+        let imageUrl = imageSource;
+        let tryHttps = false;
+        if (imageSource.startsWith('http://')) {
+          imageUrl = imageSource.replace('http://', 'https://');
+          tryHttps = true;
+          console.log(`HTTP图片自动转换为HTTPS：${imageSource} -> ${imageUrl}`);
         }
   
         try {
-          console.log('开始下载图片：', imageSource);
-          const response = await fetch(imageSource, {
+          console.log('开始下载图片：', imageUrl);
+          const response = await fetch(imageUrl, {
             mode: 'cors', // 允许跨域下载
             credentials: 'omit', // 图片下载无需携带Cookie
             headers: { 'Accept': 'image/*' }, // 明确接收图片类型
-            timeout: 10000, // 延长下载超时到10秒
             redirect: 'follow' // 允许跟随重定向（适配图片服务器HTTPS重定向）
           });
   
@@ -46,16 +54,49 @@ window.ApiRequest = {
           }
           console.log('图片下载成功，大小：', blob.size);
         } catch (error) {
-          console.error('详情图下载失败：', error);
-          // 分类错误提示
-          if (error.message.includes('Mixed Content') || error.message.includes('insecure resource')) {
-            throw new Error(`混合内容拦截（HTTP图片被HTTPS页面阻止）- ${imageSource}`);
-          } else if (error.name === 'TimeoutError') {
-            throw new Error(`下载超时（超过10秒）- ${imageSource}`);
-          } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-            throw new Error(`跨域下载失败（图片服务器CORS限制）- ${imageSource}`);
+          // 如果HTTPS转换失败，且原URL是HTTP，尝试使用原HTTP URL
+          if (tryHttps && imageSource.startsWith('http://')) {
+            console.warn(`HTTPS下载失败，尝试使用原HTTP URL：${imageSource}`);
+            try {
+              const response = await fetch(imageSource, {
+                mode: 'cors',
+                credentials: 'omit',
+                headers: { 'Accept': 'image/*' },
+                redirect: 'follow'
+              });
+  
+              if (!response.ok) {
+                throw new Error(`状态码${response.status}`);
+              }
+  
+              const contentType = response.headers.get('Content-Type');
+              if (!contentType || !contentType.startsWith('image/')) {
+                throw new Error(`非图片类型（Content-Type：${contentType}）`);
+              }
+  
+              blob = await response.blob();
+              if (blob.size === 0) {
+                throw new Error('文件为空');
+              }
+              console.log('HTTP图片下载成功，大小：', blob.size);
+            } catch (httpError) {
+              console.error('HTTP图片下载也失败：', httpError);
+              // 如果HTTP也失败，抛出原始错误
+              throw error;
+            }
           } else {
-            throw new Error(`${error.message} - ${imageSource}`);
+            // 非HTTP转HTTPS的情况，直接抛出错误
+            console.error('图片下载失败：', error);
+            // 分类错误提示
+            if (error.message.includes('Mixed Content') || error.message.includes('insecure resource')) {
+              throw new Error(`混合内容拦截（HTTP图片被HTTPS页面阻止）- ${imageSource}`);
+            } else if (error.name === 'TimeoutError') {
+              throw new Error(`下载超时（超过10秒）- ${imageSource}`);
+            } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+              throw new Error(`跨域下载失败（图片服务器CORS限制或网络错误）- ${imageSource}`);
+            } else {
+              throw new Error(`${error.message} - ${imageSource}`);
+            }
           }
         }
       }

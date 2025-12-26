@@ -2,7 +2,7 @@
 .screenshot-widget {
   position: fixed;
   right: 50px; /* 右距离不变 */
-  top: 100px; /* 改为顶部定位（原 bottom: 30px） */
+  top: 150px; /* 改为顶部定位（原 bottom: 30px） */
   width: 320px;
   height: 800px;
   background: white;
@@ -76,6 +76,84 @@
   display: none;
 }
 
+/* 自动截图加载提示 */
+.auto-screenshot-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* 图片加载中提示 */
+.images-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 30px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* 颜色列表容器 */
+.color-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 颜色项样式 */
+.color-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 6px;
+  background: #fafafa;
+  transition: all 0.2s;
+}
+
+.color-item:hover {
+  border-color: #4299e1;
+  background: #f0f8ff;
+}
+
+/* 颜色缩略图容器 */
+.color-thumbnail-wrapper {
+  width: 100%;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: #fff;
+}
+
+/* 颜色缩略图 */
+.color-thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 颜色名称 */
+.color-name {
+  font-size: 11px;
+  color: #333;
+  text-align: center;
+  font-weight: 500;
+  word-break: break-all;
+  line-height: 1.2;
+}
+
 /* 图片列表容器（不变） */
 .image-list {
   display: grid;
@@ -134,11 +212,70 @@
   display: block;
 }
 
+/* 商品信息展示区 */
+.product-info {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid #e9ecef;
+}
+
+/* 信息项 */
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 信息标签 */
+.info-label {
+  color: #666;
+  font-weight: 500;
+  min-width: 60px;
+  flex-shrink: 0;
+}
+
+/* 信息值 */
+.info-value {
+  color: #333;
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 商品标题特殊样式 */
+.product-title {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+/* 商品价格特殊样式 */
+.product-price {
+  color: #e53e3e;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 地址样式 */
+.product-address {
+  color: #4a5568;
+}
+
+/* 面料样式 */
+.product-fabric {
+  color: #4a5568;
+}
+
 /* 图片列表标题（不变） */
 .list-title {
   font-size: 14px;
   color: #333;
-  margin: 20px 0 8px;
+  margin: 10px 0 8px;
   font-weight: 600;
 }
 

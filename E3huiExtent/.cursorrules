@@ -1,0 +1,139 @@
+# E3huiExtent 浏览器扩展项目规则
+
+## 项目概述
+这是一个基于 Manifest V3 的浏览器扩展项目，用于在 e3hui.com 商品详情页进行截图、图片处理和产品库提交。
+
+## 技术栈
+- **浏览器扩展**: Manifest V3
+- **语言**: 原生 JavaScript (ES6+)
+- **依赖**: html2canvas (截图库)
+- **架构**: 模块化设计，无框架依赖
+
+## 代码规范
+
+### 文件组织
+- `core/` 目录存放核心功能模块
+- `js/` 目录存放扩展脚本（background.js, content.js）
+- `css/` 目录存放样式文件
+- `icons/` 目录存放图标资源
+- 使用模块化设计，每个模块职责单一
+
+### 命名规范
+- **变量/函数**: 使用驼峰命名法（camelCase）
+- **常量**: 使用大写字母和下划线（UPPER_SNAKE_CASE）
+- **类名**: 使用短横线命名法（kebab-case），如 `.screenshot-widget`
+- **全局对象**: 挂载到 `window` 对象，首字母大写，如 `window.Utils`, `window.GlobalData`
+
+### 全局对象约定
+- `window.Utils`: 工具函数集合（delay, dataURLToBlob, extractProductTitle 等）
+- `window.GlobalData`: 全局数据存储（screenshotBase64, productImages, productTitle 等）
+- `window.ApiRequest`: API 请求封装（uploadImageToServer, submitToProductLibrary）
+- `window.EventBind`: 事件绑定管理（bindAllEvents）
+- `window.ImageHandle`: 图片处理功能（captureTargetDiv, loadAllLazyImages 等）
+- `window.widgetTemplate`: 悬浮窗口 HTML 模板
+
+### 代码风格
+- 使用 ES6+ 语法（async/await, 箭头函数, 解构赋值等）
+- 所有函数必须包含 JSDoc 注释，说明参数和返回值
+- 错误处理：使用 try-catch，提供详细的错误信息
+- 异步操作：统一使用 async/await，避免回调地狱
+- DOM 操作前必须检查元素是否存在，避免 null 错误
+- 使用 `console.log` 进行调试日志输出
+- 使用 `alert` 进行用户提示（生产环境可考虑替换为更优雅的 UI）
+
+### 注释规范
+- 使用中文注释（项目主要面向中文用户）
+- 函数注释格式：
+  ```javascript
+  /**
+   * 函数功能描述
+   * @param {type} paramName - 参数说明
+   * @returns {type} 返回值说明
+   */
+  ```
+- 复杂逻辑必须添加行内注释说明
+
+### 错误处理
+- 所有异步操作必须包含错误处理
+- 使用 `window.Utils.formatErrorMsg()` 统一格式化错误信息
+- 网络请求失败时提供友好的中文错误提示
+- 区分不同类型的错误（网络错误、权限错误、超时错误等）
+
+### API 接口规范
+- 接口地址：使用 `window.GlobalData.apiHost` 作为基础地址
+- 上传接口：`/file/uploadfile`，参数：`fileModule`（数字，1=主图，2=详情图）、`fileList`（文件）
+- 提交接口：`/AppManage/BaseProduct/SaveFormWeb`，参数：JSON 格式
+- 所有接口请求必须携带 `credentials: 'include'` 以保持登录态
+- 接口响应格式：`{ Tag: 1, Data: string, Message: string }`
+
+### DOM 操作规范
+- 优先从父容器查找子元素，避免全局查找
+- 操作 DOM 前必须检查元素是否存在：`if (element && element.style)`
+- 使用 `querySelector` 和 `querySelectorAll` 进行元素查找
+- 动态创建元素时，确保添加到正确的父容器
+
+### 图片处理规范
+- 截图使用 html2canvas，配置：`scale: 2, useCORS: true, allowTaint: false`
+- 图片 URL 必须为 HTTPS 协议
+- Base64 转 Blob 使用 `window.Utils.dataURLToBlob()`
+- 图片下载失败时提供详细的错误信息（跨域、混合内容等）
+- 限制详情图最多上传 10 张
+
+### 事件绑定规范
+- 统一在 `window.EventBind.bindAllEvents()` 中绑定所有事件
+- 使用 `addEventListener` 绑定事件，避免内联事件
+- 事件处理函数使用箭头函数，保持 `this` 上下文
+- 事件处理中必须包含错误处理
+
+### 性能优化
+- 使用防抖/节流处理频繁触发的操作
+- 图片加载使用延迟加载（lazy loading）
+- 批量操作时添加适当的延迟，避免请求过快
+- 限制并发请求数量
+
+### 安全性
+- 所有用户输入必须进行验证
+- 图片 URL 必须验证协议（HTTPS）
+- 接口请求必须携带正确的认证信息
+- 避免 XSS 攻击，对用户输入进行转义
+
+## 开发建议
+
+### 调试
+- 使用浏览器开发者工具进行调试
+- 在关键步骤添加 `console.log` 输出
+- 使用 `console.error` 记录错误信息
+- 检查 Network 面板查看接口请求情况
+
+### 测试
+- 在目标网站（e3hui.com）上测试所有功能
+- 测试不同网络环境下的表现
+- 测试错误场景（网络失败、权限不足等）
+- 验证图片上传和提交功能
+
+### 代码修改注意事项
+- 修改 manifest.json 后需要重新加载扩展
+- 修改 content script 后需要刷新目标页面
+- 保持模块间的依赖关系清晰
+- 修改全局对象时注意影响范围
+
+## 禁止事项
+- 不要使用 `var`，统一使用 `const` 和 `let`
+- 不要使用 `eval()` 或类似的不安全函数
+- 不要在代码中硬编码接口地址（使用 `window.GlobalData.apiHost`）
+- 不要忽略错误处理
+- 不要在生产代码中留下 `debugger` 语句
+- 不要使用 `==`，统一使用 `===` 进行严格比较
+
+## 文件加载顺序
+根据 manifest.json 中的配置，脚本加载顺序为：
+1. html2canvas.min.js
+2. template.js
+3. core/utils.js
+4. core/image-handle.js
+5. core/api-request.js
+6. core/event-bind.js
+7. core/init.js
+
+确保依赖关系正确，例如 `api-request.js` 依赖 `utils.js`，`event-bind.js` 依赖所有其他模块。
+
