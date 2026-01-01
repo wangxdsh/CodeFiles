@@ -24,5 +24,14 @@
         "run_at": "document_end"
       }
     ],
-    "permissions": []
+    "permissions": [
+      "cookies"
+    ],
+    "host_permissions": [
+      "https://51pinkongtest.com.cn/*",
+      "https://www.e3hui.com/*"
+    ],
+    "background": {
+      "service_worker": "js/background.js"
+    }
   }

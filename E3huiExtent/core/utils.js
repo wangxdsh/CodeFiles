@@ -87,6 +87,98 @@ window.Utils = {
       return colors;
     },
     /**
+     * 获取认证Token（从localStorage、sessionStorage或cookie中获取）
+     * @returns {string|null} Token字符串，如果不存在则返回null
+     */
+    /**
+     * 获取认证Token（从localStorage、sessionStorage、cookie或通过background script获取）
+     * @returns {Promise<string|null>} Token字符串，如果不存在则返回null
+     */
+    async getAuthToken() {
+      // 优先从localStorage获取（优先UserToken，因为接口要求此字段名）
+      let token = localStorage.getItem('UserToken') ||
+                  localStorage.getItem('token') || 
+                  localStorage.getItem('access_token') || 
+                  localStorage.getItem('Authorization') ||
+                  localStorage.getItem('authToken');
+      
+      if (token) {
+        const tokenPreview = token.length > 20 
+          ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` 
+          : token;
+        console.log('从localStorage获取到token：', tokenPreview, `(长度: ${token.length})`);
+        console.log('完整UserToken：', token);
+        return token;
+      }
+      
+      // 如果localStorage中没有，尝试从sessionStorage获取
+      token = sessionStorage.getItem('UserToken') ||
+              sessionStorage.getItem('token') || 
+              sessionStorage.getItem('access_token') || 
+              sessionStorage.getItem('Authorization') ||
+              sessionStorage.getItem('authToken');
+      
+      if (token) {
+        const tokenPreview = token.length > 20 
+          ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` 
+          : token;
+        console.log('从sessionStorage获取到token：', tokenPreview, `(长度: ${token.length})`);
+        console.log('完整UserToken：', token);
+        return token;
+      }
+      
+      // 如果还没有，尝试从当前页面的cookie中获取
+      const cookies = document.cookie.split(';');
+      console.log('检查当前页面cookie中的token，所有cookie：', document.cookie);
+      
+      // 先检查常见的token字段名
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        const cookieName = name.trim();
+        const cookieValue = value ? decodeURIComponent(value.trim()) : '';
+        
+        if (cookieName === 'UserToken' || 
+            cookieName === 'token' || 
+            cookieName === 'access_token' || 
+            cookieName === 'Authorization' || 
+            cookieName === 'authToken' ||
+            cookieName.toLowerCase().includes('token') ||
+            cookieName.toLowerCase().includes('auth')) {
+          if (cookieValue) {
+            const tokenPreview = cookieValue.length > 20 
+              ? `${cookieValue.substring(0, 10)}...${cookieValue.substring(cookieValue.length - 10)}` 
+              : cookieValue;
+            console.log(`从当前页面cookie获取到token，字段名：${cookieName}，值：`, tokenPreview, `(长度: ${cookieValue.length})`);
+            console.log('完整UserToken：', cookieValue);
+            return cookieValue;
+          }
+        }
+      }
+      
+      // 如果当前页面没找到，尝试通过background script从51pinkongtest.com.cn获取
+      try {
+        const response = await chrome.runtime.sendMessage({
+          action: 'getToken',
+          domain: '51pinkongtest.com.cn'
+        });
+        
+        if (response && response.token) {
+          const tokenPreview = response.token.length > 20 
+            ? `${response.token.substring(0, 10)}...${response.token.substring(response.token.length - 10)}` 
+            : response.token;
+          console.log('通过background script从51pinkongtest.com.cn获取到token：', tokenPreview, `(长度: ${response.token.length})`);
+          console.log('完整UserToken：', response.token);
+          return response.token;
+        }
+      } catch (error) {
+        console.warn('通过background script获取token失败：', error);
+      }
+      
+      console.warn('未找到token，请检查是否已在 https://51pinkongtest.com.cn/admin/ 登录');
+      return null;
+    },
+
+    /**
      * 统一错误提示（分类显示，帮助排查）
      * @param {Error} error - 错误对象
      * @returns {string} 格式化后的错误信息

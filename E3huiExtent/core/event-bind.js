@@ -1,6 +1,7 @@
 // 全局核心数据（替代原export的globalData）
 window.GlobalData = {
-    apiHost: 'https://www.ehkang.com/e3hui', // 截图Base64
+    apiHost: 'https://51pinkongtest.com.cn', // 截图Base64
+    apiImgUploadUrl: 'https://51pinkongtest.com.cn/File/uploadfile', // 截图Base64
     screenshotBase64: '', // 截图Base64
     productImages: [],    // 商品详情图片URL（待上传）
     productTitle: '',     // 商品标题
@@ -230,7 +231,20 @@ window.GlobalData = {
                     }
                 }
         
-                // 第四步：提交到产品库（包含颜色数据和面料数据）
+                // 第四步：构建颜色规格数据（转换为后端ProductSpecParam格式）
+                const colorSpec = {
+                    Id: null, // 新增规格，ID为null
+                    name: "颜色",
+                    values: colorImages.map((colorItem, index) => ({
+                        Id: null, // 新增规格值，ID为null
+                        name: colorItem.color, // 颜色名称
+                        image: colorItem.imageUrl, // 上传后的颜色图片URL
+                        sort: index // 排序（按索引）
+                    })),
+                    sort: 0 // 规格排序
+                };
+        
+                // 第五步：提交到产品库（包含颜色规格数据和面料数据）
                 const submitData = {
                 Title: window.GlobalData.productTitle,
                 Pic: mainImageUrl,
@@ -238,7 +252,7 @@ window.GlobalData = {
                 productPrice:window.GlobalData.productPrice,
                 ContentPics: detailImageUrls,
                 LinkUrl: window.location.href,
-                Colors: colorImages, // 颜色和对应图片数组
+                ProductSpecs: colorImages.length > 0 ? [colorSpec] : [], // 颜色规格数组（转换为后端格式）
                 Fabric: window.GlobalData.fabric || '' // 面料数据
                 };
                 await window.ApiRequest.submitToProductLibrary(submitData);

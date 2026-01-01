@@ -113,7 +113,7 @@ window.ApiRequest = {
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         // 核心修改1：拼接上传接口地址（确保 apiHost 正确拼接）
-        const uploadUrl = `${window.GlobalData.apiHost}/file/uploadfile`; // 无多余斜杠
+        const uploadUrl = `${window.GlobalData.apiImgUploadUrl}`; // 无多余斜杠
         console.log('上传接口地址：', uploadUrl); // 日志输出，确认地址正确
 
         console.log('发起上传请求：', {
@@ -124,12 +124,45 @@ window.ApiRequest = {
           blobType: blob.type
         });
   
+        // 获取认证Token（异步获取，支持跨域）
+        const token = await window.Utils.getAuthToken();
+        const headers = {
+          'Accept': 'application/json',
+          'Referer': window.location.href
+        };
+        
+        // 如果存在token，添加到请求头（接口要求字段名为UserToken）
+        // 注意：Postman不需要header token也能调用，说明认证主要通过cookie完成
+        // 这里添加token作为备选，即使没有token，通过cookie也能认证
+        if (token) {
+          headers['UserToken'] = token;
+          // 打印token信息（用于调试，显示前10位和后10位）
+          const tokenPreview = token.length > 20 
+            ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` 
+            : token;
+          console.log('上传图片请求 - 获取到的UserToken：', tokenPreview, `(长度: ${token.length})`);
+          console.log('完整UserToken：', token);
+        } else {
+          console.warn('未获取到token，将仅通过cookie进行认证（与Postman行为一致）');
+        }
+        
+        // 打印请求信息（用于调试）
+        console.log('上传图片请求配置：', {
+          url: uploadUrl,
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'include',
+          hasToken: !!token,
+          headers: Object.keys(headers)
+        });
+        
         const response = await fetch(uploadUrl, {
           method: 'POST',
           body: formData,
-          credentials: 'include', // 携带登录态（适配[AuthorizeFilter]）
+          mode: 'cors', // 明确指定CORS模式
+          credentials: 'include', // 携带cookie（关键：Postman自动携带cookie，这里也要携带）
           signal: controller.signal, // 绑定超时控制器
-          headers: { 'Accept': 'application/json' ,'Referer': window.location.href} // 明确接收JSON
+          headers: headers
         });
   
         clearTimeout(timeoutId); // 清除超时定时器
@@ -159,6 +192,16 @@ window.ApiRequest = {
         }
   
         // 5. 解析响应数据（后端TData<string>格式）
+        // 检查响应内容类型，如果不是JSON则可能是登录页
+        const contentType = response.headers.get('Content-Type') || '';
+        if (!contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.includes('登录') || text.includes('login') || text.includes('<!DOCTYPE')) {
+            throw new Error('未登录或登录态失效，请先登录系统');
+          }
+          throw new Error(`接口返回非JSON格式（Content-Type: ${contentType}）`);
+        }
+        
         const result = await response.json();
         if (result.Tag === 1 && result.Data) {
           console.log('上传成功，返回URL：', result.Data);
@@ -170,8 +213,19 @@ window.ApiRequest = {
         // 分类抛出错误
         if (error.name === 'AbortError') {
           throw new Error(`上传超时：超过${timeoutMs/1000}秒未响应`);
-        } else if (error.message.includes('Failed to fetch')) {
-          throw new Error('网络连接失败或接口不可用');
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS policy')) {
+          // CORS 错误通常是因为预检请求失败
+          let errorMsg = 'CORS跨域请求失败！\n';
+          errorMsg += '可能原因：\n';
+          errorMsg += '1. nginx未正确处理OPTIONS预检请求\n';
+          errorMsg += '2. nginx的Access-Control-Allow-Headers未包含UserToken\n';
+          errorMsg += '3. 服务器未返回正确的CORS响应头\n\n';
+          errorMsg += '请检查nginx配置，确保：\n';
+          errorMsg += '- 正确处理OPTIONS请求并返回200状态码\n';
+          errorMsg += '- Access-Control-Allow-Headers包含UserToken和Referer';
+          throw new Error(errorMsg);
+        } else if (error.message.includes('Unexpected token') || error.message.includes('is not valid JSON')) {
+          throw new Error('未登录或登录态失效，请先登录系统（接口返回了登录页面）');
         } else {
           throw error;
         }
@@ -188,17 +242,48 @@ window.ApiRequest = {
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 延长到15秒超时
   
         // 核心修改1：拼接上传接口地址（确保 apiHost 正确拼接）
-        const submitUrl = `${window.GlobalData.apiHost}/AppManage/BaseProduct/SaveFormWeb`; // 无多余斜杠
+        const submitUrl = `${window.GlobalData.apiHost}/admin/AppManage/BaseProduct/SaveFormWebExtent`; // 无多余斜杠
         console.log('提交产品库数据：', submitData);
 
+        // 获取认证Token（异步获取，支持跨域）
+        const token = await window.Utils.getAuthToken();
+        const headers = {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Referer': window.location.href
+        };
+        
+        // 如果存在token，添加到请求头（接口要求字段名为UserToken）
+        // 注意：Postman不需要header token也能调用，说明认证主要通过cookie完成
+        // 这里添加token作为备选，即使没有token，通过cookie也能认证
+        if (token) {
+          headers['UserToken'] = token;
+          // 打印token信息（用于调试，显示前10位和后10位）
+          const tokenPreview = token.length > 20 
+            ? `${token.substring(0, 10)}...${token.substring(token.length - 10)}` 
+            : token;
+          console.log('提交产品库请求 - 获取到的UserToken：', tokenPreview, `(长度: ${token.length})`);
+          console.log('完整UserToken：', token);
+        } else {
+          console.warn('未获取到token，将仅通过cookie进行认证（与Postman行为一致）');
+        }
+
+        // 打印请求信息（用于调试）
+        console.log('提交产品库请求配置：', {
+          url: submitUrl,
+          method: 'POST',
+          mode: 'cors',
+          credentials: 'include',
+          hasToken: !!token,
+          headers: Object.keys(headers)
+        });
+        
         const response = await fetch(submitUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json','Referer': window.location.href
-          },
+          mode: 'cors', // 明确指定CORS模式
+          headers: headers,
           body: JSON.stringify(submitData),
-          credentials: 'include', // 携带登录态
+          credentials: 'include', // 携带cookie（关键：Postman自动携带cookie，这里也要携带）
           signal: controller.signal
         });
   
@@ -212,6 +297,16 @@ window.ApiRequest = {
           throw new Error('401/403：未登录或登录态失效');
         }
   
+        // 检查响应内容类型，如果不是JSON则可能是登录页
+        const contentType = response.headers.get('Content-Type') || '';
+        if (!contentType.includes('application/json')) {
+          const text = await response.text();
+          if (text.includes('登录') || text.includes('login') || text.includes('<!DOCTYPE')) {
+            throw new Error('未登录或登录态失效，请先登录系统');
+          }
+          throw new Error(`接口返回非JSON格式（Content-Type: ${contentType}）`);
+        }
+  
         const result = await response.json();
         if (result.Tag !== 1) {
           throw new Error(`接口返回异常（Tag=${result.Tag}）：${result.Message || '无错误信息'}`);
@@ -219,8 +314,19 @@ window.ApiRequest = {
       } catch (error) {
         if (error.name === 'AbortError') {
           throw new Error('提交超时：超过15秒未响应');
-        } else if (error.message.includes('Failed to fetch')) {
-          throw new Error('网络连接失败或接口不可用');
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('CORS policy')) {
+          // CORS 错误通常是因为预检请求失败
+          let errorMsg = 'CORS跨域请求失败！\n';
+          errorMsg += '可能原因：\n';
+          errorMsg += '1. nginx未正确处理OPTIONS预检请求\n';
+          errorMsg += '2. nginx的Access-Control-Allow-Headers未包含UserToken\n';
+          errorMsg += '3. 服务器未返回正确的CORS响应头\n\n';
+          errorMsg += '请检查nginx配置，确保：\n';
+          errorMsg += '- 正确处理OPTIONS请求并返回200状态码\n';
+          errorMsg += '- Access-Control-Allow-Headers包含UserToken和Referer';
+          throw new Error(errorMsg);
+        } else if (error.message.includes('Unexpected token') || error.message.includes('is not valid JSON')) {
+          throw new Error('未登录或登录态失效，请先登录系统（接口返回了登录页面）');
         } else {
           throw error;
         }

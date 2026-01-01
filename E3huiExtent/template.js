@@ -2,7 +2,7 @@ window.widgetTemplate = `
   <div class="screenshot-widget">
     <!-- 窗口标题栏 -->
     <div class="widget-header">
-      商品截图工具
+      搂品大师
       <button class="widget-close">×</button>
     </div>
     <!-- 窗口内容区 -->

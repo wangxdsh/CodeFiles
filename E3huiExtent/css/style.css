@@ -4,7 +4,7 @@
   right: 50px; /* 右距离不变 */
   top: 150px; /* 改为顶部定位（原 bottom: 30px） */
   width: 320px;
-  height: 800px;
+  height: 850px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
@@ -160,7 +160,9 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 16px;
-  max-height: 300px;
+  /* 每行图片高度约120px，3行=3*120 + 间距≈380px */
+  min-height: 100;
+  max-height: 420px;
   overflow-y: auto; /* 当内容超过最大高度时显示纵向滚动条 */
   overflow-x: hidden; /* 隐藏横向滚动条（如需） */
 }
